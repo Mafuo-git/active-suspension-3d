@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Active Suspension 3D – F2 front axle</title>
-  <meta name="description" content="Interactive 3D model of the front axle of a 1/4-scale F2-style car: double wishbones, pushrods, rockers and coilovers, with a servo coupled to each rocker by a ball lock pin for active or manual operation.">
-  <meta property="og:title" content="Active Suspension 3D – F2 front axle">
-  <meta property="og:description" content="Pushrod suspension with servo-driven rockers and a ball lock pin coupling: identical kinematics in active and manual mode.">
+  <title>Active Suspension 3D – F2-style car suspension lab</title>
+  <meta name="description" content="Interactive 3D suspension lab of a 1/4-scale F2-style car: move the pickup points, switch pushrod / pullrod, set camber, toe, caster and KPI, and see roll centre, camber gain, bump steer and motion ratio live.">
+  <meta property="og:title" content="Active Suspension 3D – suspension lab">
+  <meta property="og:description" content="Full car, steering rack, push/pullrod, adjustable pickup points and alignment, live kinematics.">
   <meta name="theme-color" content="#16161a">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%237f77dd'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23ef9f27'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
@@ -20,76 +20,129 @@
   </script>
 </head>
 <body>
-  <div id="viewport" aria-label="3D view of the front suspension"></div>
+  <div id="viewport" aria-label="3D view of the car and its suspension"></div>
   <div id="loading">Loading 3D model…</div>
 
   <header class="topbar">
     <h1>Active Suspension 3D</h1>
-    <span class="subtitle">1/4-scale F2-style front axle · servo-coupled rockers</span>
+    <span class="subtitle">1/4-scale F2-style car · suspension lab</span>
   </header>
+
+  <nav class="viewbar" aria-label="Camera and display">
+    <div class="viewbtns">
+      <button data-view="iso" title="3/4 view">Iso</button>
+      <button data-view="front" title="Front view">Front</button>
+      <button data-view="side" title="Side view">Side</button>
+      <button data-view="top" title="Top view">Top</button>
+      <button data-view="corner" title="Front-left corner">Corner</button>
+      <button data-view="rocker" title="Front rockers">Rocker</button>
+    </div>
+    <div class="viewbtns">
+      <button id="btnBody" title="Bodywork: solid, ghost or hidden">Body: ghost</button>
+      <button id="btnOverlay" title="Instant centres, roll centres and steering axes">Geometry</button>
+      <button id="btnLabels" class="on" title="Show part names">Labels</button>
+    </div>
+  </nav>
 
   <aside id="panel" class="panel">
     <button id="panelToggle" class="panel-handle" aria-expanded="true" aria-controls="panelBody">
       <span class="grip"></span><span id="panelToggleText">Hide controls</span>
     </button>
 
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="drive" class="on">Drive</button>
+      <button role="tab" data-tab="setup">Setup</button>
+      <button role="tab" data-tab="points">Points</button>
+      <button role="tab" data-tab="analysis">Analysis</button>
+    </div>
+
     <div id="panelBody" class="panel-body">
-      <section>
-        <h2>Mode</h2>
+      <!-- DRIVE ---------------------------------------------------------- -->
+      <section class="tab" data-tab="drive">
+        <h2>Actuation</h2>
         <div class="seg" role="group" aria-label="Operating mode">
           <button id="btnActive" class="on">Active (servo)</button>
           <button id="btnManual">Manual (hand)</button>
         </div>
-      </section>
+        <p id="modeHint" class="hint small"></p>
 
-      <section>
-        <h2>Input</h2>
-        <div class="slider-block">
-          <label id="heaveLabel" for="heave">Heave</label>
-          <div class="slider-row"><input id="heave" type="range"><output id="heaveValue">0 mm</output></div>
-        </div>
-        <div class="slider-block">
-          <label id="rollLabel" for="roll">Roll</label>
-          <div class="slider-row"><input id="roll" type="range"><output id="rollValue">0 mm</output></div>
-        </div>
-        <div id="scenarios" class="grid3" aria-label="Active mode scenarios">
+        <h2>Inputs</h2>
+        <div id="driveSliders"></div>
+        <div id="scenarios" class="grid3">
           <button data-scenario="brake">Braking</button>
+          <button data-scenario="accel">Accelerate</button>
           <button data-scenario="corner">Cornering</button>
+          <button data-scenario="slalom">Slalom</button>
           <button data-scenario="kerb">Kerb</button>
+          <button data-scenario="stop">Reset</button>
         </div>
+
+        <h2>Wheels</h2>
+        <table class="wheels">
+          <thead><tr><th></th><th>Travel</th><th>Camber</th><th>Toe/steer</th><th>Damper</th></tr></thead>
+          <tbody id="wheelTable"></tbody>
+        </table>
+        <p id="warn" class="warn" hidden></p>
       </section>
 
-      <p id="hint" class="hint"></p>
-
-      <section class="readouts">
-        <div><span>Rocker ↔ servo</span><b id="rCoupling"></b></div>
-        <div><span>Ball lock pin</span><b id="rPin"></b></div>
-        <div><span>Servo power</span><b id="rPower"></b></div>
-        <div><span>Wheel travel L / R</span><b id="rTravel"></b></div>
-        <div><span>Rocker angle (R)</span><b id="rRocker"></b></div>
-        <div><span>Coilover length (R)</span><b id="rSpring"></b></div>
-        <div><span>Motion ratio (R)</span><b id="rMotion"></b></div>
-        <div><span>Camber (R)</span><b id="rCamber"></b></div>
-      </section>
-
-      <section>
-        <h2>View</h2>
-        <div class="grid4">
-          <button data-view="iso">Iso</button>
-          <button data-view="front">Front</button>
-          <button data-view="top">Top</button>
-          <button data-view="rocker">Rocker</button>
+      <!-- SETUP ---------------------------------------------------------- -->
+      <section class="tab" data-tab="setup" hidden>
+        <div class="seg axle-seg" role="group" aria-label="Axle">
+          <button data-axle="front" class="on">Front axle</button>
+          <button data-axle="rear">Rear axle</button>
         </div>
+        <h2>Spring actuation</h2>
+        <div class="seg" role="group" aria-label="Rod type">
+          <button data-rod="push">Pushrod</button>
+          <button data-rod="pull">Pullrod</button>
+        </div>
+        <h2>Alignment &amp; upright</h2>
+        <div id="setupSliders"></div>
+        <h2>Vehicle</h2>
+        <div id="vehicleSliders"></div>
         <div class="grid2">
-          <button id="btnLabels" class="on">Labels</button>
-          <button id="btnXray">X-ray</button>
+          <button id="btnResetAxle">Reset axle</button>
+          <button id="btnResetAll">Reset all</button>
         </div>
+        <p id="setupHelp" class="explain"></p>
+      </section>
+
+      <!-- POINTS --------------------------------------------------------- -->
+      <section class="tab" data-tab="points" hidden>
+        <div class="seg axle-seg" role="group" aria-label="Axle">
+          <button data-axle="front" class="on">Front axle</button>
+          <button data-axle="rear">Rear axle</button>
+        </div>
+        <p class="hint small">Tap a coloured point in 3D or in the list, then drag the arrows. Values in mm for the left side (x forward, y left, z up, origin on the ground at the front axle). The right side is mirrored.</p>
+        <div id="pointList" class="points"></div>
+        <div class="grid3">
+          <button id="btnShare" title="Copy a link to this setup">Share link</button>
+          <button id="btnExport" title="Download the setup as JSON">Export</button>
+          <button id="btnImport" title="Load a setup JSON file">Import</button>
+        </div>
+        <input id="fileImport" type="file" accept="application/json,.json" hidden>
+        <p id="pointsHelp" class="explain">Pickup points (hard points) are where the links attach to the chassis and to the upright. Moving them changes how the wheel moves: watch camber gain, bump steer, roll centre and motion ratio in the Analysis tab.</p>
+      </section>
+
+      <!-- ANALYSIS ------------------------------------------------------- -->
+      <section class="tab" data-tab="analysis" hidden>
+        <table class="metrics">
+          <thead><tr><th></th><th class="cf">Front</th><th class="cr">Rear</th></tr></thead>
+          <tbody id="metricTable"></tbody>
+        </table>
+        <h2>Over wheel travel</h2>
+        <div class="chart"><canvas id="chartCamber"></canvas></div>
+        <div class="chart"><canvas id="chartToe"></canvas></div>
+        <div class="chart"><canvas id="chartMR"></canvas></div>
+        <p class="explain">Curves are for one wheel moving from droop (left) to bump (right) with the chassis level. The dot is the current position of the left wheels. Tip: turn on <b>Geometry</b> to see the instant centres and roll centres in 3D.</p>
       </section>
 
       <p class="foot">Drag to orbit · Pinch / scroll to zoom · Two fingers / right-drag to pan.<br>
-        Concept model, 1 unit = 10 mm. <a href="https://github.com/Mafuo-git/active-suspension-3d" target="_blank" rel="noopener">Source on GitHub</a></p>
+        1/4-scale concept model, dimensions in mm. <a href="https://github.com/Mafuo-git/active-suspension-3d" target="_blank" rel="noopener">Source on GitHub</a> · <a href="/v1/">v1 (front axle)</a></p>
     </div>
   </aside>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script type="module" src="main.js"></script>
 </body>
