@@ -17,14 +17,14 @@ const Z_ARM = 2;                                       // servo arm plane
 const SERVO_PIVOT = new THREE.Vector2(-5, 0);          // servo output shaft axis
 const ARM_LENGTH = 5;                                  // servo arm: pivot to pin hole
 const ROCKER_PIVOT = new THREE.Vector2(1.2, 7.6);
-const ROCKER_COILOVER = new THREE.Vector2(-1.4, -1.2); // coilover mount, relative to rocker pivot
-const ROCKER_PUSHROD = new THREE.Vector2(2.2, 0.8);    // pushrod mount, relative to rocker pivot
+const ROCKER_COILOVER = new THREE.Vector2(-2.4, -1.6); // coilover mount, relative to rocker pivot
+const ROCKER_PUSHROD = new THREE.Vector2(2.6, 1.2);    // pushrod mount, relative to rocker pivot
 const UPRIGHT_X = 9.6;
 const PUSHROD_BOTTOM_X = 8.8;
 const PUSHROD_BOTTOM_Y0 = -0.6;                        // pushrod lower end at zero wheel travel
 const PIN_Z = { active: 1.45, manual: 0.45 };          // ball lock pin centre position along z
-const SERVO_RANGE_DEG = 25;
-const TRAVEL_RANGE_MM = { min: -20, max: 30 };
+const SERVO_RANGE_DEG = 12;
+const TRAVEL_RANGE_MM = { min: -10, max: 15 };
 
 // ---------------------------------------------------------------------------
 // Planar kinematics helpers
@@ -248,14 +248,17 @@ const damperBody = mesh(new THREE.CylinderGeometry(0.38, 0.38, 1, 32), M.coilove
 const damperShaft = mesh(new THREE.CylinderGeometry(0.13, 0.13, 1, 16), M.steel, 0, 0, 0, coilover);
 const perchLow = mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.12, 32), M.coilover, 0, 0, 0, coilover);
 const perchHigh = mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.12, 32), M.coilover, 0, 0, 0, coilover);
-const spring = (() => {
-  const turns = 8, pts = [];
+// Helical spring rebuilt for its actual length, so the wire keeps a round section when compressed.
+function springGeometry(length, turns = 8, radius = 0.6, wire = 0.075) {
+  const pts = [];
   for (let i = 0; i <= 320; i++) {
     const t = i / 320;
-    pts.push(new THREE.Vector3(0.6 * Math.cos(t * Math.PI * 2 * turns), t, 0.6 * Math.sin(t * Math.PI * 2 * turns)));
+    pts.push(new THREE.Vector3(radius * Math.cos(t * Math.PI * 2 * turns), t * length, radius * Math.sin(t * Math.PI * 2 * turns)));
   }
-  return mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 480, 0.075, 8, false), M.spring, 0, 0, 0, coilover);
-})();
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 400, wire, 8, false);
+}
+let springLength = 4;
+const spring = mesh(springGeometry(springLength), M.spring, 0, 0, 0, coilover);
 
 // Pushrod with rod-end balls
 const pushrod = mesh(new THREE.CylinderGeometry(0.11, 0.11, 1, 12), M.steel);
@@ -350,7 +353,13 @@ function updateAssembly() {
   const shaftStart = 0.55 + bodyLen, shaftEnd = length - 0.5;
   damperShaft.scale.y = Math.max(shaftEnd - shaftStart, 0.05); damperShaft.position.y = (shaftStart + shaftEnd) / 2;
   perchLow.position.y = 1.4; perchHigh.position.y = length - 0.9;
-  spring.position.y = 1.46; spring.scale.y = Math.max(length - 0.9 - 1.46 - 0.06, 0.1);
+  spring.position.y = 1.46;
+  const newSpringLength = Math.max(length - 0.9 - 1.46 - 0.06, 0.1);
+  if (Math.abs(newSpringLength - springLength) > 0.005) {
+    spring.geometry.dispose();
+    spring.geometry = springGeometry(newSpringLength);
+    springLength = newSpringLength;
+  }
 
   // Pushrod, upright, wishbones, wheel
   const rTop = v3(rockerPoint(ROCKER_PUSHROD, phi), Z_EYE);
@@ -485,7 +494,10 @@ let camTween = null;
 function goToView(name, instant = false) {
   const v = VIEWS[name];
   const to = { pos: new THREE.Vector3(...v.pos), target: new THREE.Vector3(...v.target) };
-  if (isSmallScreen() && name !== 'pin') to.pos.sub(to.target).multiplyScalar(1.35).add(to.target);
+  // Pull the camera back on portrait screens so the whole assembly fits horizontally
+  const aspect = container.clientWidth / Math.max(container.clientHeight, 1);
+  const fit = aspect < 1.2 ? Math.min(1.25 / aspect, 2.4) : 1;
+  to.pos.sub(to.target).multiplyScalar(name === 'pin' ? Math.sqrt(fit) : fit).add(to.target);
   if (instant) { camera.position.copy(to.pos); controls.target.copy(to.target); controls.update(); return; }
   camTween = { from: { pos: camera.position.clone(), target: controls.target.clone() }, to, t: 0 };
   requestRender();
@@ -511,8 +523,8 @@ function stepSimulation(dt) {
   if (state.demo) {
     state.demoClock += dt;
     const s = Math.sin(state.demoClock * 2.2);
-    if (state.mode === 'active') state.servoTarget = THREE.MathUtils.degToRad(18 * s);
-    else state.travelTarget = (s > 0 ? 25 * s : 15 * s) / UNIT_MM;
+    if (state.mode === 'active') state.servoTarget = THREE.MathUtils.degToRad(10 * s);
+    else state.travelTarget = (s > 0 ? 14 * s : 9 * s) / UNIT_MM;
   }
 
   // Sequencing: in manual mode the arm returns to neutral before the pin moves;
