@@ -1227,11 +1227,11 @@ function fitDistance() {
   const w = Math.max(container.clientWidth - panelOffset(), 1), h = Math.max(container.clientHeight * (isSmallScreen() ? 0.6 : 1), 1);
   const vFov = THREE.MathUtils.degToRad(camera.fov);
   const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (w / h));
-  return (FRAME.radius / Math.sin(Math.min(vFov, hFov) / 2)) * 0.82;
+  return (FRAME.radius / Math.sin(Math.min(vFov, hFov) / 2)) * (isSmallScreen() ? 1.05 : 0.82);
 }
 let camTween = null;
 function goToView(name, instant = false) {
-  const v = VIEWS[name];
+  const v = name === 'top' && isSmallScreen() ? { dir: [0.001, 1, 0] } : VIEWS[name]; // car along the long side of the screen
   const to = v.dir
     ? { target: FRAME.center.clone(), pos: FRAME.center.clone().addScaledVector(new THREE.Vector3(...v.dir).normalize(), fitDistance()) }
     : { pos: new THREE.Vector3(...v.pos), target: new THREE.Vector3(...v.target) };
