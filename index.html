@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Active Suspension 3D – Mode Selector</title>
+  <meta name="description" content="Interactive 3D model of a 1/4-scale single-seater active suspension: servo-driven coilover anchor with a ball lock pin to switch between active and manual mode.">
+  <meta property="og:title" content="Active Suspension 3D – Mode Selector">
+  <meta property="og:description" content="Explore a servo-actuated rocker suspension and its ball lock pin mode selector in 3D.">
+  <meta name="theme-color" content="#16161a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%237f77dd'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23ef9f27'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="viewport" aria-label="3D view of the suspension assembly"></div>
+  <div id="loading">Loading 3D model…</div>
+
+  <header class="topbar">
+    <h1>Active Suspension 3D</h1>
+    <span class="subtitle">1/4-scale rocker &amp; ball lock pin mode selector</span>
+  </header>
+
+  <aside id="panel" class="panel">
+    <button id="panelToggle" class="panel-handle" aria-expanded="true" aria-controls="panelBody">
+      <span class="grip"></span><span id="panelToggleText">Hide controls</span>
+    </button>
+
+    <div id="panelBody" class="panel-body">
+      <section>
+        <h2>Mode</h2>
+        <div class="seg" role="group" aria-label="Operating mode">
+          <button id="btnActive" class="on">Active</button>
+          <button id="btnManual">Manual</button>
+        </div>
+      </section>
+
+      <section>
+        <label id="sliderLabel" for="slider">Servo angle</label>
+        <div class="slider-row">
+          <input id="slider" type="range" min="-25" max="25" step="0.5" value="0">
+          <output id="sliderValue">0°</output>
+        </div>
+        <button id="btnDemo" class="wide">▶ Play demo</button>
+      </section>
+
+      <section class="readouts">
+        <div><span>Servo ↔ coilover</span><b id="rLink"></b></div>
+        <div><span>Coilover anchor</span><b id="rAnchor"></b></div>
+        <div><span>Servo power</span><b id="rPower"></b></div>
+        <div><span>Wheel travel</span><b id="rTravel"></b></div>
+        <div><span>Spring length</span><b id="rSpring"></b></div>
+      </section>
+
+      <p id="hint" class="hint"></p>
+
+      <section>
+        <h2>View</h2>
+        <div class="grid4">
+          <button data-view="iso">Iso</button>
+          <button data-view="front">Front</button>
+          <button data-view="top">Top</button>
+          <button data-view="pin">Pin</button>
+        </div>
+        <div class="grid2">
+          <button id="btnLabels" class="on">Labels</button>
+          <button id="btnXray">X-ray</button>
+        </div>
+      </section>
+
+      <p class="foot">Drag to orbit · Pinch / scroll to zoom · Two fingers / right-drag to pan.<br>
+        Concept model, not to scale. <a href="https://github.com/Mafuo-git/active-suspension-3d" target="_blank" rel="noopener">Source on GitHub</a></p>
+    </div>
+  </aside>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
