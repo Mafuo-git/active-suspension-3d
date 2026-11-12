@@ -52,7 +52,7 @@ html, body {
 
 /* Control panel: floating card on desktop, bottom sheet on mobile */
 .panel {
-  position: fixed; top: 14px; right: 14px; width: 300px; max-height: calc(100% - 28px);
+  position: fixed; top: 14px; right: 14px; width: 320px; max-height: calc(100% - 28px);
   background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   display: flex; flex-direction: column; overflow: hidden; z-index: 10;
@@ -80,6 +80,9 @@ button.wide { width: 100%; margin-top: 8px; }
 
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+.slider-block + .slider-block { margin-top: 8px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
 
 .slider-row { display: flex; align-items: center; gap: 10px; }
@@ -90,6 +93,7 @@ button.wide { width: 100%; margin-top: 8px; }
 .readouts span { color: var(--muted); }
 .readouts b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .ok { color: var(--ok); }
+.accent { color: var(--accent); }
 .ko { color: var(--ko); }
 
 .hint { margin: 0; font-size: 13px; color: var(--muted); }
