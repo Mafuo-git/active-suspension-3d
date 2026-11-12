@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Active Suspension 3D – F2 front axle</title>
+  <meta name="description" content="Interactive 3D model of the front axle of a 1/4-scale F2-style car: double wishbones, pushrods, rockers and coilovers, with a servo coupled to each rocker by a ball lock pin for active or manual operation.">
+  <meta property="og:title" content="Active Suspension 3D – F2 front axle">
+  <meta property="og:description" content="Pushrod suspension with servo-driven rockers and a ball lock pin coupling: identical kinematics in active and manual mode.">
+  <meta name="theme-color" content="#16161a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%237f77dd'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23ef9f27'/%3E%3C/svg%3E">
+  <base href="/v1/">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="viewport" aria-label="3D view of the front suspension"></div>
+  <div id="loading">Loading 3D model…</div>
+
+  <header class="topbar">
+    <h1>Active Suspension 3D</h1>
+    <span class="subtitle">1/4-scale F2-style front axle · servo-coupled rockers</span>
+  </header>
+
+  <aside id="panel" class="panel">
+    <button id="panelToggle" class="panel-handle" aria-expanded="true" aria-controls="panelBody">
+      <span class="grip"></span><span id="panelToggleText">Hide controls</span>
+    </button>
+
+    <div id="panelBody" class="panel-body">
+      <section>
+        <h2>Mode</h2>
+        <div class="seg" role="group" aria-label="Operating mode">
+          <button id="btnActive" class="on">Active (servo)</button>
+          <button id="btnManual">Manual (hand)</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Input</h2>
+        <div class="slider-block">
+          <label id="heaveLabel" for="heave">Heave</label>
+          <div class="slider-row"><input id="heave" type="range"><output id="heaveValue">0 mm</output></div>
+        </div>
+        <div class="slider-block">
+          <label id="rollLabel" for="roll">Roll</label>
+          <div class="slider-row"><input id="roll" type="range"><output id="rollValue">0 mm</output></div>
+        </div>
+        <div id="scenarios" class="grid3" aria-label="Active mode scenarios">
+          <button data-scenario="brake">Braking</button>
+          <button data-scenario="corner">Cornering</button>
+          <button data-scenario="kerb">Kerb</button>
+        </div>
+      </section>
+
+      <p id="hint" class="hint"></p>
+
+      <section class="readouts">
+        <div><span>Rocker ↔ servo</span><b id="rCoupling"></b></div>
+        <div><span>Ball lock pin</span><b id="rPin"></b></div>
+        <div><span>Servo power</span><b id="rPower"></b></div>
+        <div><span>Wheel travel L / R</span><b id="rTravel"></b></div>
+        <div><span>Rocker angle (R)</span><b id="rRocker"></b></div>
+        <div><span>Coilover length (R)</span><b id="rSpring"></b></div>
+        <div><span>Motion ratio (R)</span><b id="rMotion"></b></div>
+        <div><span>Camber (R)</span><b id="rCamber"></b></div>
+      </section>
+
+      <section>
+        <h2>View</h2>
+        <div class="grid4">
+          <button data-view="iso">Iso</button>
+          <button data-view="front">Front</button>
+          <button data-view="top">Top</button>
+          <button data-view="rocker">Rocker</button>
+        </div>
+        <div class="grid2">
+          <button id="btnLabels" class="on">Labels</button>
+          <button id="btnXray">X-ray</button>
+        </div>
+      </section>
+
+      <p class="foot">Drag to orbit · Pinch / scroll to zoom · Two fingers / right-drag to pan.<br>
+        Concept model, 1 unit = 10 mm. <a href="https://github.com/Mafuo-git/active-suspension-3d" target="_blank" rel="noopener">Source on GitHub</a> · Archived v1 – <a href="/">open the latest version</a></p>
+    </div>
+  </aside>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
