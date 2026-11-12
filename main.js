@@ -82,7 +82,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 4;
-controls.maxDistance = 60;
+controls.maxDistance = 90;
 
 const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
 keyLight.position.set(8, 14, 12);
@@ -477,27 +477,47 @@ $('panelToggle').addEventListener('click', () => {
   const collapsed = panel.classList.toggle('collapsed');
   $('panelToggle').setAttribute('aria-expanded', String(!collapsed));
   $('panelToggleText').textContent = collapsed ? 'Show controls' : 'Hide controls';
+  updateViewOffset();
+  requestRender();
 });
 if (isSmallScreen()) {
   panel.classList.add('collapsed');
   $('panelToggleText').textContent = 'Show controls';
 }
 
-// Camera presets with smooth transitions
+// Camera presets with smooth transitions.
+// Iso / Front / Top frame the whole assembly automatically for the visible area (screen minus control panel).
+const FRAME = { center: new THREE.Vector3(2.9, 3.7, 1), radius: 11 };
 const VIEWS = {
-  iso: { pos: [11, 7, 17], target: [1, 2.6, 0.6] },
-  front: { pos: [1, 3, 24], target: [1, 2.6, 0.6] },
-  top: { pos: [1, 26, 3], target: [1, 2.6, 0.6] },
+  iso: { dir: [0.55, 0.35, 0.85] },
+  front: { dir: [0, 0.05, 1] },
+  top: { dir: [0, 1, 0.12] },
   pin: { pos: [4.5, 3.2, 7], target: [0, 0, 0.8] },
 };
+
+// Width hidden by the floating panel on large screens (0 on phones or when collapsed)
+const panelOffset = () => (!isSmallScreen() && !panel.classList.contains('collapsed') ? panel.offsetWidth + 14 : 0);
+
+// Shift the projection so the model is centred in the area left of the panel
+function updateViewOffset() {
+  const w = container.clientWidth, h = container.clientHeight, off = panelOffset();
+  if (off) camera.setViewOffset(w, h, off / 2, 0, w, h);
+  else camera.clearViewOffset();
+}
+
+function fitDistance() {
+  const w = Math.max(container.clientWidth - panelOffset(), 1), h = Math.max(container.clientHeight, 1);
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (w / h));
+  return (FRAME.radius / Math.sin(Math.min(vFov, hFov) / 2)) * 0.9;
+}
+
 let camTween = null;
 function goToView(name, instant = false) {
   const v = VIEWS[name];
-  const to = { pos: new THREE.Vector3(...v.pos), target: new THREE.Vector3(...v.target) };
-  // Pull the camera back on portrait screens so the whole assembly fits horizontally
-  const aspect = container.clientWidth / Math.max(container.clientHeight, 1);
-  const fit = aspect < 1.2 ? Math.min(1.25 / aspect, 2.4) : 1;
-  to.pos.sub(to.target).multiplyScalar(name === 'pin' ? Math.sqrt(fit) : fit).add(to.target);
+  const to = v.dir
+    ? { target: FRAME.center.clone(), pos: FRAME.center.clone().addScaledVector(new THREE.Vector3(...v.dir).normalize(), fitDistance()) }
+    : { pos: new THREE.Vector3(...v.pos), target: new THREE.Vector3(...v.target) };
   if (instant) { camera.position.copy(to.pos); controls.target.copy(to.target); controls.update(); return; }
   camTween = { from: { pos: camera.position.clone(), target: controls.target.clone() }, to, t: 0 };
   requestRender();
@@ -589,6 +609,7 @@ function resize() {
   const w = container.clientWidth, h = container.clientHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
+  updateViewOffset();
   camera.updateProjectionMatrix();
   requestRender();
 }
@@ -597,8 +618,8 @@ new ResizeObserver(resize).observe(container);
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
-goToView('iso', true);
 updateAssembly();
 refreshUI();
 resize();
+goToView('iso', true);
 document.getElementById('loading').classList.add('done');
