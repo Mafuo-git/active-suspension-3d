@@ -1213,9 +1213,9 @@ const VIEWS = {
   iso: { dir: [0.95, 0.62, 0.9] },
   front: { dir: [1, 0.14, 0] },
   side: { dir: [0, 0.12, 1] },
-  top: { dir: [0.001, 1, 0] },
-  corner: { pos: [26, 20, -46], target: [-1, 7, -13] },
-  rocker: { pos: [16, 34, -26], target: [-1.5, 14, -3] },
+  top: { dir: [0, 1, 0.001] },
+  corner: { pos: [45, 32, -70], target: [-8, 9, -10] },
+  rocker: { pos: [28, 40, -42], target: [-2, 13, -2] },
 };
 const panelOffset = () => (!isSmallScreen() && !panel.classList.contains('collapsed') ? panel.offsetWidth + 14 : 0);
 function updateViewOffset() {
