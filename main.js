@@ -202,7 +202,7 @@ function loadInitialSetup() {
     if (m) return mergeSetup(s, JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))));
   } catch (e) { /* ignore a broken link */ }
   try {
-    const raw = localStorage.getItem('as3d-setup');
+    const raw = localStorage.getItem('as3d-setup-v2');
     if (raw) return mergeSetup(s, JSON.parse(raw));
   } catch (e) { /* storage unavailable */ }
   return s;
@@ -223,7 +223,7 @@ let saveTimer = 0;
 function persist() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem('as3d-setup', JSON.stringify(setup)); } catch (e) { /* ignore */ }
+    try { localStorage.setItem('as3d-setup-v2', JSON.stringify(setup)); } catch (e) { /* ignore */ }
   }, 300);
 }
 const shareLink = () => `${location.origin}${location.pathname}#s=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(setup)))))}`;
@@ -617,7 +617,7 @@ function updateVisuals(sol) {
     steering.wheel.position.copy(V(sw));
     const colDir = S.norm(S.sub(pinion, sw));
     steering.wheel.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), V(colDir));
-    steering.wheel.rotateX(state.input.steer * DEG);
+    steering.wheel.rotateX(-state.input.steer * DEG); // + = left turn = counter-clockwise for the driver
   }
 
   if (overlay.visible) updateOverlay(sol);

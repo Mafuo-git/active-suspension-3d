@@ -89,12 +89,12 @@ export const DEFAULT_SETUP = {
     push: {
       rodOuter: vec(2, 158, 50),
       rockerPivot: vec(-12, 40, 150), rockerAxis: vec(-12, 27.1, 134.7),
-      rockerRod: vec(-33.4, 43.8, 146.7), rockerDamper: vec(-12, 53.7, 138.4), damperChassis: vec(-84, 53.7, 138.4),
+      rockerRod: vec(10, 40.8, 149.3), rockerDamper: vec(-12, 26.3, 161.6), damperChassis: vec(-84, 26.3, 161.6),
     },
     pull: {
       rodOuter: vec(-5, 150, 118),
       rockerPivot: vec(-12, 42, 40), rockerAxis: vec(-12, 53.7, 23.8),
-      rockerRod: vec(-33.5, 45.8, 42.8), rockerDamper: vec(-12, 56.6, 50.5), damperChassis: vec(60, 56.6, 50.5),
+      rockerRod: vec(9.9, 44, 41.4), rockerDamper: vec(-12, 27.4, 29.5), damperChassis: vec(60, 27.4, 29.5),
     },
   },
   rear: {
@@ -108,14 +108,14 @@ export const DEFAULT_SETUP = {
       tieRodInner: vec(-829, 38, 68.5), tieRodOuter: vec(-824, 160, 70),
     },
     push: {
-      rodOuter: vec(-782, 150, 50),
-      rockerPivot: vec(-764, 36, 140), rockerAxis: vec(-764, 48.4, 155.7),
-      rockerRod: vec(-742.8, 40.6, 136.3), rockerDamper: vec(-764, 50.1, 128.8), damperChassis: vec(-692, 50.1, 128.8),
+      rodOuter: vec(-750, 128, 52),
+      rockerPivot: vec(-744, 36, 140), rockerAxis: vec(-744, 22.2, 125.5),
+      rockerRod: vec(-765.8, 38, 138.1), rockerDamper: vec(-744, 23, 152.4), damperChassis: vec(-672, 23, 152.4),
     },
     pull: {
-      rodOuter: vec(-788, 142, 118),
-      rockerPivot: vec(-764, 36, 42), rockerAxis: vec(-764, 24.3, 58.3),
-      rockerRod: vec(-743.3, 42.1, 46.4), rockerDamper: vec(-764, 50.6, 52.5), damperChassis: vec(-836, 50.6, 52.5),
+      rodOuter: vec(-750, 108, 122),
+      rockerPivot: vec(-734, 50, 52), rockerAxis: vec(-734, 34.6, 64.8),
+      rockerRod: vec(-756, 50.8, 53), rockerDamper: vec(-734, 61.5, 65.9), damperChassis: vec(-662, 61.5, 65.9),
     },
   },
 };

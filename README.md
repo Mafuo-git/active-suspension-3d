@@ -1,5 +1,7 @@
 # Active Suspension 3D
 
+A project by **Matheo Merlin**.
+
 Interactive 3D **suspension lab** of a **1/4-scale single-seater (F2-style)**, built to teach vehicle dynamics. Everything runs in the browser, on desktop, tablet and phone.
 
 **Live:** https://active-susp.vercel.app · first version (front axle only): https://active-susp.vercel.app/v1/
