@@ -836,6 +836,7 @@ function exportMotec() {
   download(`${base}.ld`, tlog.buildLd({
     driver: '', vehicle: 'Active Suspension 3D', venue: 'Test circuit',
     event: 'Track test', session: 'Practice', comment, shortComment: 'Track test',
+    weight: drive.mass, vehicleType: 'Single seater', vehicleComment: 'Lab setup x4',
   }), 'application/octet-stream');
   setTimeout(() => download(`${base}.ldx`, tlog.buildLdx(), 'application/xml'), 600);
   const m = Math.floor(tlog.duration / 60), sec = Math.round(tlog.duration % 60);

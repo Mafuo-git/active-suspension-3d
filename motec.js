@@ -5,7 +5,10 @@
 // follows the community documentation of the format (header, event block, a linked list of channel
 // descriptors, then the channel data as float32 arrays).
 
-const HEAD_SIZE = 1762, EVENT_SIZE = 1154, CHAN_SIZE = 124;
+const HEAD_SIZE = 1762, EVENT_SIZE = 1154, VENUE_SIZE = 1100, VEHICLE_SIZE = 260, CHAN_SIZE = 124;
+// i2 Pro only opens "pro logging" files. The pro-logging key in the header goes with the logger's
+// serial number: this pair is the one found in the logs written by the usual sim-racing exporters.
+const DEVICE_SERIAL = 0x1f44, PRO_LOGGING_KEY = 0xc81a4;
 
 export class TelemetryLog {
   // channels: [{ name, short, unit, get: () => number }]
@@ -44,7 +47,8 @@ export class TelemetryLog {
   // ---------------------------------------------------------------- .ld
   buildLd(meta = {}) {
     const n = this.channels.length, len = this.n;
-    const eventPtr = HEAD_SIZE, metaPtr = HEAD_SIZE + EVENT_SIZE, dataPtr = metaPtr + n * CHAN_SIZE;
+    const eventPtr = HEAD_SIZE, venuePtr = eventPtr + EVENT_SIZE, vehiclePtr = venuePtr + VENUE_SIZE;
+    const metaPtr = vehiclePtr + VEHICLE_SIZE, dataPtr = metaPtr + n * CHAN_SIZE;
     const total = dataPtr + n * len * 4;
     const buf = new ArrayBuffer(total), dv = new DataView(buf), u8 = new Uint8Array(buf);
     const str = (off, s, size) => { const b = asciiBytes(s, size); u8.set(b, off); };
@@ -56,7 +60,7 @@ export class TelemetryLog {
     dv.setUint32(12, dataPtr, true);
     dv.setUint32(36, eventPtr, true);
     dv.setUint16(64, 1, true); dv.setUint16(66, 0x4240, true); dv.setUint16(68, 0xf, true);
-    dv.setUint32(70, 12007, true);           // device serial
+    dv.setUint32(70, DEVICE_SERIAL, true);   // device serial
     str(74, 'ADL', 8);                         // device type
     dv.setUint16(82, 420, true);               // device version
     dv.setUint16(84, 0xadb0, true);
@@ -66,13 +70,20 @@ export class TelemetryLog {
     str(158, meta.driver || '', 64);
     str(222, meta.vehicle || '', 64);
     str(350, meta.venue || '', 64);
-    dv.setUint32(1502, 0xc81a4, true);         // "pro logging" flag
+    dv.setUint32(1502, PRO_LOGGING_KEY, true); // "pro logging" key (matches the serial above)
     str(1572, meta.shortComment || '', 64);
     // event
     str(eventPtr, meta.event || '', 64);
     str(eventPtr + 64, meta.session || '', 64);
     str(eventPtr + 128, meta.comment || '', 1024);
-    dv.setUint16(eventPtr + 1152, 0, true);    // no venue block
+    dv.setUint16(eventPtr + 1152, venuePtr, true);
+    // venue and vehicle blocks, as in a logger download
+    str(venuePtr, meta.venue || '', 64);
+    dv.setUint16(venuePtr + 1098, vehiclePtr, true);
+    str(vehiclePtr, meta.vehicle || '', 64);
+    dv.setUint32(vehiclePtr + 192, Math.round(meta.weight || 0), true);
+    str(vehiclePtr + 196, meta.vehicleType || '', 32);
+    str(vehiclePtr + 228, meta.vehicleComment || '', 32);
     // channel descriptors (doubly linked list) and data
     for (let c = 0; c < n; c++) {
       const ch = this.channels[c], at = metaPtr + c * CHAN_SIZE, dp = dataPtr + c * len * 4;
