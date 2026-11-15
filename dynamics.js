@@ -84,7 +84,9 @@ export class VehicleSim {
 
   reset(pose) {
     Object.assign(this, { x: pose.x, y: pose.y, psi: pose.psi, vx: 0, vy: 0, r: 0, axF: 0, ayF: 0, ax: 0, ay: 0, roll: 0, dive: 0, heave: 0, steerDeg: 0 });
-    this.wheels = WHEELS.map((k, i) => ({ key: k, side: i % 2 ? -1 : 1, front: i < 2, fz: 0, fx: 0, fy: 0, alpha: 0, util: 0, slip: '', camber: 0, delta: 0, travel: 0, status: 'ok' }));
+    this.downforce = 0;
+    const m = this.p.mass * 9.81, wf = this.p.weightFront;
+    this.wheels = WHEELS.map((k, i) => ({ key: k, side: i % 2 ? -1 : 1, front: i < 2, fz: (i < 2 ? wf : 1 - wf) * m / 2, fx: 0, fy: 0, alpha: 0, util: 0, slip: '', camber: 0, delta: 0, travel: 0, status: 'ok' }));
     this.updateKinematics(true);
   }
 
