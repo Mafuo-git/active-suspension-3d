@@ -49,6 +49,7 @@
     <button id="btnTelemetry" class="on" title="Telemetry (T / X)">Telemetry</button>
     <button id="btnSetup" title="Setup (B)">Setup</button>
     <button id="btnReset" title="Back on track (R / A)">Reset car</button>
+    <button id="btnSound" class="on" title="Engine sound (M)">Sound: on</button>
     <button id="btnHelp" title="Help (H / View)">?</button>
   </nav>
 
@@ -73,6 +74,8 @@
 
   <!-- Speed and pedals -->
   <section class="dash" aria-label="Speed and driver inputs">
+    <div class="revs"><i id="revBar"></i></div>
+    <div class="gearbox"><b id="gear">1</b><span id="rpm">3500 rpm</span></div>
     <div class="speed"><b id="speed">0</b><span>km/h</span></div>
     <div class="pedals">
       <div class="pedal"><i id="brakeBar"></i><span>Brake</span></div>
@@ -98,6 +101,8 @@
     <div class="grid2">
       <button id="btnTC" class="on">Traction control</button>
       <button id="btnABS" class="on">ABS</button>
+      <button id="btnGearbox" class="on" title="Automatic or manual gearbox (E / Q or RB / LB to shift)">Auto gearbox</button>
+      <button id="btnSteerAssist" class="on" title="Limits the steering to the angle that uses the tyres' peak grip at the current speed">Steering assist</button>
     </div>
     <button id="btnDriveReset" class="wide">Reset these settings</button>
     <h3>Try this</h3>
@@ -107,6 +112,8 @@
       <li>Move the <b>aero balance</b> rearwards: stable in fast corners, lazy in slow ones.</li>
       <li>Turn off <b>ABS</b> and brake hard while turning: locked fronts, no steering.</li>
       <li>Raise the <b>front roll centre</b> (lab, Points tab): less body roll, more front load transfer.</li>
+      <li>Turn off the <b>steering assist</b> and steer hard: the front slip angle goes past its peak (≈7.5°) and the car pushes wide. Less steering is often faster.</li>
+      <li>Put two wheels on the <b>grass</b>: about 40 % of the grip and a lot of drag, then dirty tyres for the next few hundred metres.</li>
     </ul>
     <p id="explain" class="explain"></p>
   </aside>
@@ -127,11 +134,12 @@
       <p>Drive the car with the setup from the suspension lab and watch how it behaves. The car is simulated at full size (lab model ×4). The suspension kinematics run live: body roll and pitch change each wheel's camber and steer angle, which changes its grip.</p>
       <div class="controls">
         <div><h3>Keyboard</h3>
-          <p><kbd>↑</kbd>/<kbd>W</kbd> throttle · <kbd>↓</kbd>/<kbd>S</kbd> brake · <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> steer<br><kbd>R</kbd> reset · <kbd>C</kbd> camera · <kbd>T</kbd> telemetry · <kbd>B</kbd> setup · <kbd>P</kbd> pause</p></div>
+          <p><kbd>↑</kbd>/<kbd>W</kbd> throttle · <kbd>↓</kbd>/<kbd>S</kbd> brake · <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> steer<br><kbd>E</kbd>/<kbd>Q</kbd> gear up / down · <kbd>M</kbd> sound<br><kbd>R</kbd> reset · <kbd>C</kbd> camera · <kbd>T</kbd> telemetry · <kbd>B</kbd> setup · <kbd>P</kbd> pause</p></div>
         <div><h3>Controller (Xbox, PlayStation…)</h3>
-          <p>Left stick steer · <b>RT</b> throttle · <b>LT</b> brake<br><b>A</b> reset · <b>Y</b> camera · <b>X</b> telemetry · <b>B</b> setup · <b>Menu</b> pause</p>
+          <p>Left stick steer · <b>RT</b> throttle · <b>LT</b> brake · <b>RB</b>/<b>LB</b> gear up / down<br><b>A</b> reset · <b>Y</b> camera · <b>X</b> telemetry · <b>B</b> setup · <b>Menu</b> pause</p>
           <p id="padStatus" class="pad">No controller detected: plug it in and press a button.</p></div>
       </div>
+      <p class="note"><b>Reverse</b>: once the car is stopped, release the brake and press it again. The brake then drives backwards and the throttle stops the car; press the throttle at a standstill to go back to first gear. The gearbox is automatic by default; shifting by hand switches it to manual.</p>
       <div class="watch"><h3>What to watch</h3>
         <p><b>Tyres</b>: bar = vertical load, colour = grip used (green → red at the limit), with live camber and slip angle. <b>Balance</b>: front vs rear slip angle, so you can see understeer or oversteer. <b>g-g diagram</b>: how much of the grip circle you use. <b>Lap trace</b>: compare your speed with your best lap.</p></div>
       <button id="btnStart" class="start">Start driving</button>

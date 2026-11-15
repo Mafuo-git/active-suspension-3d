@@ -6,13 +6,15 @@
 import * as THREE from 'three';
 import * as S from './suspension.js';
 import { buildBody } from './body.js';
-import { VehicleSim, DEFAULT_DRIVE, WHEELS, SCALE } from './dynamics.js';
+import { VehicleSim, DEFAULT_DRIVE, WHEELS, SCALE, SURFACES, PEAK_SLIP, ENGINE } from './dynamics.js';
+import { CarAudio } from './audio.js';
 import { TRACK, locate } from './track.js';
 
 const $ = (id) => document.getElementById(id);
 const DEG = Math.PI / 180;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const fmt = (x, d = 1) => (Number.isFinite(x) ? x.toFixed(d) : '–');
+const KERB_K = 1 / 220; // curvature above which a corner gets kerbs
 
 // ---------------------------------------------------------------------------
 // Setup (shared with the lab) and drive settings
@@ -36,7 +38,7 @@ function loadSetup() {
   return s;
 }
 function loadDrive() {
-  try { const raw = localStorage.getItem('as3d-drive-v1'); if (raw) return { ...DEFAULT_DRIVE, ...JSON.parse(raw) }; } catch (e) { /* no storage */ }
+  try { const raw = localStorage.getItem('as3d-drive-v2'); if (raw) return { ...DEFAULT_DRIVE, ...JSON.parse(raw) }; } catch (e) { /* no storage */ }
   return { ...DEFAULT_DRIVE };
 }
 let setup = loadSetup();
@@ -45,7 +47,7 @@ try { S.buildCar(setup); } catch (e) { setup = S.cloneSetup(S.DEFAULT_SETUP); }
 const encodeSetup = () => encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(setup)))));
 function saveAll() {
   try {
-    localStorage.setItem('as3d-drive-v1', JSON.stringify(drive));
+    localStorage.setItem('as3d-drive-v2', JSON.stringify(drive));
     localStorage.setItem('as3d-setup-v2', JSON.stringify(setup));
   } catch (e) { /* ignore */ }
   const href = `index.html#s=${encodeSetup()}`;
@@ -126,7 +128,7 @@ const W = (x, y, h = 0) => new THREE.Vector3(x, h, -y);
   // kerbs on both sides through the corners
   const red = new THREE.Color(0xd23b3b), white = new THREE.Color(0xf0f0ea);
   const kerbMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 });
-  const inCorner = (p) => Math.abs(p.k) > 1 / 220;
+  const inCorner = (p) => Math.abs(p.k) > KERB_K;
   ribbon(hw + 1.4, hw, 0.04, (i) => (Math.floor(i / 2) % 2 ? red : white), kerbMat, inCorner);
   ribbon(-hw, -hw - 1.4, 0.04, (i) => (Math.floor(i / 2) % 2 ? red : white), kerbMat, inCorner);
   // start / finish line (chequered)
@@ -255,7 +257,10 @@ const helmetLocal = new THREE.Vector3(-262, 0, 205); // driver's eyes, lab mm (I
 
 function updateCar() {
   const sol = sim.kin;
-  carRoot.position.set(sim.x, 0, -sim.y);
+  // kerbs and grass shake the car a little
+  const kerbN = sim.wheels.filter((w) => w.surface === SURFACES.kerb).length, grassN = sim.wheels.filter((w) => w.surface === SURFACES.grass).length;
+  const shake = paused ? 0 : Math.min(1, sim.speed / 25) * (kerbN * 0.006 + grassN * 0.01);
+  carRoot.position.set(sim.x, shake ? (Math.random() - 0.5) * shake : 0, -sim.y);
   carRoot.rotation.y = sim.psi;
   if (!sol) return;
   const { R, ref, h } = sol.pose;
@@ -320,13 +325,21 @@ function updateCamera(dt, snap = false) {
 // Inputs: keyboard, gamepad, touch
 // ---------------------------------------------------------------------------
 const keys = new Set();
-const input = { steer: 0, throttle: 0, brake: 0 };
+const input = { steer: 0, throttle: 0, brake: 0 };   // driver's pedals and steering
+const simIn = { steer: 0, throttle: 0, brake: 0 };   // what the car receives (pedals swap in reverse)
+let reverse = false, reverseHold = 0, reverseArmed = false;
+const audio = new CarAudio();
+try { audio.enabled = localStorage.getItem('as3d-drive-sound') !== 'off'; } catch (e) { /* ignore */ }
+// browsers only start audio after a click, a tap or a key press
+const wakeAudio = () => { if (audio.enabled) audio.start(); updateSoundBtn(); };
+addEventListener('pointerdown', wakeAudio);
 let padIndex = null, padPrev = [];
 const touch = { steer: 0, throttle: 0, brake: 0, active: false };
 
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT') return;
   keys.add(e.code);
+  wakeAudio();
   if (!$('help').hidden && ['Enter', 'Space', 'ArrowUp', 'KeyW'].includes(e.code)) { startDriving(); e.preventDefault(); return; }
   switch (e.code) {
     case 'KeyR': resetCar(); break;
@@ -335,6 +348,9 @@ addEventListener('keydown', (e) => {
     case 'KeyB': toggleSetup(); break;
     case 'KeyH': showHelp(); break;
     case 'KeyP': case 'Escape': togglePause(); break;
+    case 'KeyE': shiftGear(1); break;
+    case 'KeyQ': shiftGear(-1); break;
+    case 'KeyM': toggleSound(); break;
     default: break;
   }
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
@@ -359,11 +375,14 @@ function readPad() {
   const pressed = (i) => !!pad.buttons[i]?.pressed;
   const edge = (i) => pressed(i) && !padPrev[i];
   if (edge(0)) { if (!$('help').hidden) startDriving(); else resetCar(); }
+  if (pad.buttons.some((x) => x.pressed)) wakeAudio();
   if (edge(3)) cycleCam();
   if (edge(2)) toggleTelemetry();
   if (edge(1)) toggleSetup();
   if (edge(9)) togglePause();
   if (edge(8)) showHelp();
+  if (edge(5)) shiftGear(1);   // RB: upshift
+  if (edge(4)) shiftGear(-1);  // LB: downshift
   padPrev = pad.buttons.map((x) => x.pressed);
   let x = pad.axes[0] || 0;
   x = Math.abs(x) < 0.07 ? 0 : Math.sign(x) * ((Math.abs(x) - 0.07) / 0.93) ** 1.5;
@@ -397,27 +416,52 @@ function readInputs(dt) {
   const kSteer = (keys.has('ArrowLeft') || keys.has('KeyA') ? 1 : 0) - (keys.has('ArrowRight') || keys.has('KeyD') ? 1 : 0);
   const kThr = keys.has('ArrowUp') || keys.has('KeyW') ? 1 : 0;
   const kBrk = keys.has('ArrowDown') || keys.has('KeyS') || keys.has('Space') ? 1 : 0;
+  // Steering assist: full lock on the keyboard or the stick gives the steering angle that uses the
+  // tyres' peak grip at this speed (Ackermann angle L/R for the tightest possible corner + a little
+  // slip), instead of turning the front tyres far past their peak slip angle.
+  const assist = drive.steerAssist !== false;
+  const roadMax = sim.g.L * sim.maxLateral(v) / (v * v) + 0.3 * PEAK_SLIP; // rad
+  const usefulLock = clamp((roadMax / DEG) * sim.g.steerRatio / drive.steerLock, 0, 1);
   let steerT, thr, brk, analog = false;
   if (pad && (Math.abs(pad.steer) > 0 || pad.throttle > 0.02 || pad.brake > 0.02)) {
-    // analog: speed-sensitive range so a thumb stick stays drivable at high speed
-    steerT = pad.steer * Math.min(1, 14 / Math.max(v, 14)); thr = pad.throttle; brk = pad.brake; analog = true;
+    steerT = pad.steer * (assist ? Math.min(1, usefulLock * 1.15) : 1); thr = pad.throttle; brk = pad.brake; analog = true;
   } else if (touch.active && (touch.steer || touch.throttle || touch.brake)) {
-    steerT = touch.steer * Math.min(1, 12 / Math.max(v, 12)); thr = touch.throttle; brk = touch.brake; analog = true;
+    steerT = touch.steer * (assist ? Math.min(1, usefulLock * 1.1) : Math.min(1, 12 / Math.max(v, 12))); thr = touch.throttle; brk = touch.brake; analog = true;
   } else {
-    steerT = kSteer * Math.min(1, 7 / Math.max(v, 7)); thr = kThr; brk = kBrk;
+    steerT = kSteer * (assist ? usefulLock : Math.min(1, 7 / Math.max(v, 7))); thr = kThr; brk = kBrk;
   }
   const rate = analog ? 12 : (steerT === 0 ? 3.5 : 2.2);
   input.steer += clamp(steerT - input.steer, -rate * dt, rate * dt);
   const pedalRate = analog ? 20 : 6;
   input.throttle += clamp(thr - input.throttle, -pedalRate * dt, pedalRate * dt);
   input.brake += clamp(brk - input.brake, -pedalRate * 2 * dt, pedalRate * dt);
+  // Reverse: once the car is stopped, release the brake and press it again (hold ~0.3 s) to engage
+  // it; the brake pedal then drives backwards and the throttle pedal brakes. Braking to a stop and
+  // keeping the pedal down never selects reverse. Press the throttle once stopped for first gear.
+  if (!paused) {
+    if (!reverse) {
+      const stopped = sim.speed < 0.5;
+      if (!stopped) reverseArmed = false;
+      else if (brk < 0.1) reverseArmed = true;
+      reverseHold = reverseArmed && brk > 0.5 && thr < 0.05 ? reverseHold + dt : 0;
+      if (reverseHold > 0.3) { reverse = true; reverseHold = 0; reverseArmed = false; sim.setReverse(true); toast('Reverse gear: brake to go back, throttle to stop'); }
+    } else if (thr > 0.1 && sim.vx > -0.6) { reverse = false; sim.setReverse(false); }
+  }
+  simIn.steer = input.steer;
+  simIn.throttle = reverse ? input.brake * 0.6 : input.throttle;
+  simIn.brake = reverse ? input.throttle : input.brake;
+}
+function shiftGear(dir) {
+  if (reverse || paused) return;
+  if (drive.autoGearbox) { drive.autoGearbox = false; applySettings(); toast('Manual gearbox (switch back in Setup)'); }
+  sim.shift(dir);
 }
 
 // ---------------------------------------------------------------------------
 // Lap timing and telemetry recording
 // ---------------------------------------------------------------------------
 const BIN = 10, NBINS = Math.ceil(TRACK.length / BIN);
-const lap = { t: 0, valid: true, started: false, idx: 0, s: 0, last: null, best: null, sectors: [null, null, null], bestSectors: [null, null, null], sectorStart: 0, trace: new Float32Array(NBINS), bestTrace: null, offTrack: false };
+const lap = { t: 0, valid: true, started: false, idx: 0, s: 0, last: null, best: null, sectors: [null, null, null], bestSectors: [null, null, null], sectorStart: 0, trace: new Float32Array(NBINS), bestTrace: null, offTrack: false, progress: 0 };
 function fmtTime(t) {
   if (t == null || !Number.isFinite(t)) return '–';
   const m = Math.floor(t / 60), s = t - m * 60;
@@ -429,21 +473,25 @@ function wheelLaterals(loc) {
     return loc.lateral + (wx - sim.x) * loc.point.nx + (wy - sim.y) * loc.point.ny;
   });
 }
-let surfaces = [1, 1, 1, 1];
+let surfaces = [SURFACES.asphalt, SURFACES.asphalt, SURFACES.asphalt, SURFACES.asphalt];
 function updateTrack(dt) {
   const loc = locate(sim.x, sim.y, lap.idx);
   lap.idx = loc.index;
   const hw = TRACK.width / 2;
   const lats = wheelLaterals(loc);
-  surfaces = lats.map((l) => (Math.abs(l) <= hw ? 1 : Math.abs(l) <= hw + 1.4 ? 0.97 : 0.6));
-  const onGrass = surfaces.filter((s) => s < 0.9).length;
-  if (onGrass >= 2) { sim.vx *= 1 - 0.35 * dt; }
+  // kerbs only exist through the corners
+  const kerbs = Math.abs(loc.point.k) > KERB_K;
+  surfaces = lats.map((l) => (Math.abs(l) <= hw ? SURFACES.asphalt : kerbs && Math.abs(l) <= hw + 1.4 ? SURFACES.kerb : SURFACES.grass));
   if (lats.every((l) => Math.abs(l) > hw) && lap.started) { lap.valid = false; }
   // far away: put the car back
   if (Math.abs(loc.lateral) > 60) resetCar();
   const prev = lap.s;
   lap.s = loc.s;
   const L = TRACK.length;
+  // distance really covered forwards this lap (reversing over the line does not count)
+  let ds = lap.s - prev;
+  if (ds < -L / 2) ds += L; else if (ds > L / 2) ds -= L;
+  lap.progress += ds;
   if (lap.started) {
     lap.t += dt;
     lap.trace[Math.min(NBINS - 1, Math.floor(lap.s / BIN))] = sim.speed * 3.6;
@@ -453,8 +501,9 @@ function updateTrack(dt) {
       if (prev < b && lap.s >= b && lap.s - prev < 50) closeSector(k - 1);
     }
   }
-  if (prev > L - 60 && lap.s < 60) {
+  if (prev > L - 60 && lap.s < 60 && (!lap.started || lap.progress > L * 0.9)) {
     if (lap.started) finishLap(); else { lap.started = true; }
+    lap.progress = 0;
     lap.t = 0; lap.valid = true; lap.sectorStart = 0; lap.trace = new Float32Array(NBINS); lap.sectors = [null, null, null];
   }
 }
@@ -506,6 +555,8 @@ function drawTyres() {
     ctx.fillText(`α ${(w.alpha / DEG).toFixed(1)}°`, tx, y + 19);
     if (w.slip) { ctx.fillStyle = '#ef9f27'; ctx.fillText(w.slip, tx, y + 32); }
     if (w.fz < 50) { ctx.fillStyle = '#f09595'; ctx.fillText('lifted', tx, y + 32); }
+    else if (!w.slip && w.surface !== SURFACES.asphalt) { ctx.fillStyle = '#97c459'; ctx.fillText(w.surface.name, tx, y + 32); }
+    else if (!w.slip && w.dirt > 0.05) { ctx.fillStyle = '#c9a26b'; ctx.fillText(`dirty ${Math.round(w.dirt * 100)}%`, tx, y + 32); }
   });
 }
 function drawGG() {
@@ -543,6 +594,12 @@ function drawTrace() {
 }
 function updateHud() {
   $('speed').textContent = Math.round(sim.speed * 3.6);
+  $('gear').textContent = sim.gear === -1 ? 'R' : sim.gear;
+  $('gear').classList.toggle('rev', sim.gear === -1);
+  const revs = clamp((sim.rpm - ENGINE.idle) / (ENGINE.redline - ENGINE.idle), 0, 1);
+  $('revBar').style.width = `${revs * 100}%`;
+  $('revBar').className = sim.rpm > ENGINE.upshift - 250 ? 'shift' : sim.rpm > 8500 ? 'high' : '';
+  $('rpm').textContent = `${Math.round(sim.rpm / 100) * 100} rpm`;
   $('throttleBar').style.height = `${input.throttle * 100}%`;
   $('brakeBar').style.height = `${input.brake * 100}%`;
   $('steerBar').style.left = `${50 - input.steer * 50}%`;
@@ -572,6 +629,7 @@ function updateHud() {
       ['Roll', `${(sim.roll / DEG).toFixed(2)}°`], ['Pitch', `${(sim.dive / DEG).toFixed(2)}°`],
       ['Downforce', `${(sim.downforce / 1000).toFixed(1)} kN`], ['Yaw rate', `${(sim.r / DEG).toFixed(0)}°/s`],
       ['Wheel angle', `${(((sim.wheels[0].delta + sim.wheels[1].delta) / 2) / DEG).toFixed(1)}°`], ['Front travel', `${(((sim.wheels[0].travel + sim.wheels[1].travel) / 2) * 1000).toFixed(1)} mm`],
+      ['Engine', `${Math.round(sim.rpm / 10) * 10} rpm`], ['Drive force', `${(sim.driveForce / 1000).toFixed(1)} kN`],
     ];
     $('stats').innerHTML = stats.map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('');
     drawTyres(); drawGG(); drawTrace();
@@ -638,7 +696,11 @@ function applySettings() {
   saveAll();
   $('btnTC').classList.toggle('on', !!drive.tc);
   $('btnABS').classList.toggle('on', !!drive.abs);
+  $('btnGearbox').classList.toggle('on', !!drive.autoGearbox);
+  $('btnSteerAssist').classList.toggle('on', drive.steerAssist !== false);
 }
+$('btnGearbox').addEventListener('click', () => { drive.autoGearbox = !drive.autoGearbox; applySettings(); toast(drive.autoGearbox ? 'Automatic gearbox' : 'Manual gearbox: E / Q or RB / LB'); });
+$('btnSteerAssist').addEventListener('click', () => { drive.steerAssist = !drive.steerAssist; applySettings(); toast(`Steering assist ${drive.steerAssist ? 'on' : 'off'}`); });
 $('btnTC').addEventListener('click', () => { drive.tc = !drive.tc; applySettings(); toast(`Traction control ${drive.tc ? 'on' : 'off'}`); });
 $('btnABS').addEventListener('click', () => { drive.abs = !drive.abs; applySettings(); toast(`ABS ${drive.abs ? 'on' : 'off'}`); });
 $('btnDriveReset').addEventListener('click', () => { drive = { ...DEFAULT_DRIVE }; setup.vehicle.brakeBiasFront = S.DEFAULT_SETUP.vehicle.brakeBiasFront; applySettings(); sliderViews.forEach((f) => f()); });
@@ -672,6 +734,7 @@ function resetCar() {
   const p = loc.point;
   sim.reset({ x: p.x, y: p.y, psi: Math.atan2(p.ty, p.tx) });
   input.steer = input.throttle = input.brake = 0;
+  reverse = false;
   if (lap.started) lap.valid = false;
   updateCamera(0, true);
 }
@@ -682,11 +745,24 @@ function toggleSetup() {
   if (!s.hidden) { geometrySummary(); if (small()) $('telemetry').hidden = true; }
 }
 function showHelp() { $('help').hidden = false; paused = true; updatePadStatus(); }
-function startDriving() { $('help').hidden = true; paused = false; last = performance.now(); }
+function startDriving() { $('help').hidden = true; paused = false; last = performance.now(); wakeAudio(); }
 function togglePause() {
   if (!$('help').hidden) { startDriving(); return; }
   paused = !paused; toast(paused ? 'Paused' : 'Go');
 }
+function updateSoundBtn() {
+  const b = $('btnSound');
+  b.textContent = audio.enabled ? 'Sound: on' : 'Sound: off';
+  b.classList.toggle('on', audio.enabled);
+}
+function toggleSound() {
+  audio.setEnabled(!audio.enabled);
+  try { localStorage.setItem('as3d-drive-sound', audio.enabled ? 'on' : 'off'); } catch (e) { /* ignore */ }
+  updateSoundBtn();
+  if (audio.enabled && !audio.running) toast('Click or press a key to start the sound');
+}
+$('btnSound').addEventListener('click', toggleSound);
+document.addEventListener('visibilitychange', () => { if (document.hidden) audio.suspend(); else wakeAudio(); });
 $('btnCam').addEventListener('click', cycleCam);
 $('btnTelemetry').addEventListener('click', toggleTelemetry);
 $('btnSetup').addEventListener('click', toggleSetup);
@@ -710,7 +786,7 @@ function frame(now) {
     acc += frameDt;
     let steps = 0;
     while (acc >= PHYS_DT && steps < 40) {
-      sim.step(PHYS_DT, input, (i) => surfaces[i]);
+      sim.step(PHYS_DT, simIn, (i) => surfaces[i]);
       acc -= PHYS_DT; steps++;
     }
     updateTrack(frameDt);
@@ -718,6 +794,7 @@ function frame(now) {
     if (ggTrail.length > 180) ggTrail.shift();
   } else frameDt = 0;
   updateCar();
+  audio.update(sim, simIn, { paused });
   updateCamera(Math.max(frameDt, 1 / 60));
   sun.position.copy(carRoot.position).add(new THREE.Vector3(30, 60, 20));
   sun.target.position.copy(carRoot.position);
