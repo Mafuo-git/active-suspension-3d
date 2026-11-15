@@ -8,6 +8,7 @@ import * as S from './suspension.js';
 import { buildBody } from './body.js';
 import { VehicleSim, DEFAULT_DRIVE, WHEELS, SCALE, SURFACES, PEAK_SLIP, ENGINE } from './dynamics.js';
 import { CarAudio } from './audio.js';
+import { TelemetryLog, download } from './motec.js';
 import { TRACK, locate } from './track.js';
 
 const $ = (id) => document.getElementById(id);
@@ -351,6 +352,7 @@ addEventListener('keydown', (e) => {
     case 'KeyE': shiftGear(1); break;
     case 'KeyQ': shiftGear(-1); break;
     case 'KeyM': toggleSound(); break;
+    case 'KeyL': exportMotec(); break;
     default: break;
   }
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
@@ -477,6 +479,7 @@ let surfaces = [SURFACES.asphalt, SURFACES.asphalt, SURFACES.asphalt, SURFACES.a
 function updateTrack(dt) {
   const loc = locate(sim.x, sim.y, lap.idx);
   lap.idx = loc.index;
+  lap.lateral = loc.lateral;
   const hw = TRACK.width / 2;
   const lats = wheelLaterals(loc);
   // kerbs only exist through the corners
@@ -503,6 +506,7 @@ function updateTrack(dt) {
   }
   if (prev > L - 60 && lap.s < 60 && (!lap.started || lap.progress > L * 0.9)) {
     if (lap.started) finishLap(); else { lap.started = true; }
+    tlog.beacon();
     lap.progress = 0;
     lap.t = 0; lap.valid = true; lap.sectorStart = 0; lap.trace = new Float32Array(NBINS); lap.sectors = [null, null, null];
   }
@@ -515,6 +519,7 @@ function finishLap() {
   closeSector(2);
   const t = lap.t;
   lap.last = { t, valid: lap.valid };
+  tlog.lap(t, lap.valid);
   if (lap.valid && (!lap.best || t < lap.best)) {
     const delta = lap.best ? t - lap.best : null;
     lap.best = t; lap.bestTrace = lap.trace; lap.bestSectors = [...lap.sectors];
@@ -773,6 +778,72 @@ $('btnStart').addEventListener('click', startDriving);
 if (small()) { $('telemetry').hidden = true; $('btnTelemetry').classList.remove('on'); }
 
 // ---------------------------------------------------------------------------
+// Data logging for MoTeC i2 (50 Hz). Channel names follow MoTeC conventions so the usual i2
+// worksheets and maths pick them up. Positions are turned into GPS coordinates around an arbitrary
+// reference point so i2 can draw the track map.
+// ---------------------------------------------------------------------------
+const LOG_RATE = 50, LAT0 = 46.2, LON0 = 6.1, R_EARTH = 6371000;
+const W4 = [['FL', 0], ['FR', 1], ['RL', 2], ['RR', 3]];
+const surfaceCode = (w) => (w.surface === SURFACES.grass ? 2 : w.surface === SURFACES.kerb ? 1 : 0);
+const LOG_CHANNELS = [
+  { name: 'Ground Speed', short: 'Speed', unit: 'km/h', get: () => sim.speed * 3.6 },
+  { name: 'Engine RPM', short: 'RPM', unit: 'rpm', get: () => sim.rpm },
+  { name: 'Gear', short: 'Gear', unit: '', get: () => sim.gear },
+  { name: 'Throttle Pos', short: 'Thr', unit: '%', get: () => input.throttle * 100 },
+  { name: 'Brake Pos', short: 'Brk', unit: '%', get: () => input.brake * 100 },
+  { name: 'Steering Angle', short: 'Steer', unit: 'deg', get: () => sim.steerDeg },
+  { name: 'Steered Angle', short: 'SteerW', unit: 'deg', get: () => ((sim.wheels[0].delta + sim.wheels[1].delta) / 2) / DEG },
+  { name: 'G Force Lat', short: 'GLat', unit: 'G', get: () => sim.ayF / 9.81 },
+  { name: 'G Force Long', short: 'GLong', unit: 'G', get: () => sim.axF / 9.81 },
+  { name: 'Yaw Rate', short: 'Yaw', unit: 'deg/s', get: () => sim.r / DEG },
+  { name: 'Body Roll', short: 'Roll', unit: 'deg', get: () => sim.roll / DEG },
+  { name: 'Body Pitch', short: 'Pitch', unit: 'deg', get: () => sim.dive / DEG },
+  { name: 'Understeer Angle', short: 'US', unit: 'deg', get: () => sim.balance || 0 },
+  { name: 'Downforce', short: 'DF', unit: 'N', get: () => sim.downforce },
+  { name: 'Drive Force', short: 'Fdrive', unit: 'N', get: () => sim.driveForce },
+  { name: 'TC Active', short: 'TC', unit: '', get: () => (sim.wheels.some((w) => w.slip === 'TC') ? 1 : 0) },
+  { name: 'ABS Active', short: 'ABS', unit: '', get: () => (sim.wheels.some((w) => w.slip === 'ABS') ? 1 : 0) },
+  { name: 'Lap Distance', short: 'LapDist', unit: 'm', get: () => lap.s },
+  { name: 'Track Offset', short: 'Offset', unit: 'm', get: () => lap.lateral || 0 },
+  { name: 'GPS Latitude', short: 'Lat', unit: 'deg', get: () => LAT0 + (sim.y / R_EARTH) / DEG },
+  { name: 'GPS Longitude', short: 'Long', unit: 'deg', get: () => LON0 + (sim.x / (R_EARTH * Math.cos(LAT0 * DEG))) / DEG },
+  ...W4.flatMap(([c, i]) => [
+    { name: `Tyre Load ${c}`, short: `Load${c}`, unit: 'N', get: () => sim.wheels[i].fz },
+    { name: `Tyre Slip Angle ${c}`, short: `Slip${c}`, unit: 'deg', get: () => sim.wheels[i].alpha / DEG },
+    { name: `Camber ${c}`, short: `Cam${c}`, unit: 'deg', get: () => sim.wheels[i].camber },
+    { name: `Tyre Grip Used ${c}`, short: `Grip${c}`, unit: '%', get: () => sim.wheels[i].util * 100 },
+    { name: `Wheel Travel ${c}`, short: `Trav${c}`, unit: 'mm', get: () => sim.wheels[i].travel * 1000 },
+    { name: `Surface ${c}`, short: `Surf${c}`, unit: '', get: () => surfaceCode(sim.wheels[i]) },
+  ]),
+];
+const tlog = new TelemetryLog(LOG_CHANNELS, LOG_RATE);
+let logAcc = 0;
+function logStep(dt) {
+  logAcc += dt;
+  while (logAcc >= 1 / LOG_RATE) {
+    logAcc -= 1 / LOG_RATE;
+    if (!tlog.record()) { if (!tlog.warned) { tlog.warned = true; toast('Log full (60 min): export it, then reload to start a new one'); } break; }
+  }
+}
+function exportMotec() {
+  if (tlog.n < LOG_RATE) { toast('Drive a little first: nothing to export yet'); return; }
+  const d = tlog.started, p2 = (x) => String(x).padStart(2, '0');
+  const base = `TrackTest_${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}`;
+  const f = setup.front, r = setup.rear;
+  const comment = `Setup: front ${f.rod}rod, rear ${r.rod}rod, camber ${f.alignment.camber.toFixed(2)} / ${r.alignment.camber.toFixed(2)} deg, `
+    + `springs ${drive.springFront} / ${drive.springRear} N/mm, ARB ${drive.arbFront} / ${drive.arbRear} Nm/deg, ClA ${drive.downforce}, `
+    + `aero balance ${Math.round(drive.aeroBalance * 100)} %, brake balance ${Math.round(setup.vehicle.brakeBiasFront * 100)} %, mass ${drive.mass} kg, power ${drive.power} kW, grip ${drive.grip}`;
+  download(`${base}.ld`, tlog.buildLd({
+    driver: '', vehicle: 'Active Suspension 3D', venue: 'Test circuit',
+    event: 'Track test', session: 'Practice', comment, shortComment: 'Track test',
+  }), 'application/octet-stream');
+  setTimeout(() => download(`${base}.ldx`, tlog.buildLdx(), 'application/xml'), 600);
+  const m = Math.floor(tlog.duration / 60), sec = Math.round(tlog.duration % 60);
+  toast(`MoTeC log exported: ${m} min ${sec} s, ${tlog.beacons.length + 1} laps. Keep the .ld and .ldx together.`);
+}
+$('btnExport').addEventListener('click', exportMotec);
+
+// ---------------------------------------------------------------------------
 // Main loop: fixed 240 Hz physics, rendering at the display rate
 // ---------------------------------------------------------------------------
 const PHYS_DT = 1 / 240;
@@ -790,6 +861,7 @@ function frame(now) {
       acc -= PHYS_DT; steps++;
     }
     updateTrack(frameDt);
+    logStep(frameDt);
     ggTrail.push([sim.ayF / 9.81, sim.axF / 9.81]);
     if (ggTrail.length > 180) ggTrail.shift();
   } else frameDt = 0;

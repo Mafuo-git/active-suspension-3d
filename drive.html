@@ -50,6 +50,7 @@
     <button id="btnSetup" title="Setup (B)">Setup</button>
     <button id="btnReset" title="Back on track (R / A)">Reset car</button>
     <button id="btnSound" class="on" title="Engine sound (M)">Sound: on</button>
+    <button id="btnExport" title="Download the session as a MoTeC i2 log (.ld + .ldx) (L)">Export MoTeC</button>
     <button id="btnHelp" title="Help (H / View)">?</button>
   </nav>
 
@@ -134,12 +135,13 @@
       <p>Drive the car with the setup from the suspension lab and watch how it behaves. The car is simulated at full size (lab model ×4). The suspension kinematics run live: body roll and pitch change each wheel's camber and steer angle, which changes its grip.</p>
       <div class="controls">
         <div><h3>Keyboard</h3>
-          <p><kbd>↑</kbd>/<kbd>W</kbd> throttle · <kbd>↓</kbd>/<kbd>S</kbd> brake · <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> steer<br><kbd>E</kbd>/<kbd>Q</kbd> gear up / down · <kbd>M</kbd> sound<br><kbd>R</kbd> reset · <kbd>C</kbd> camera · <kbd>T</kbd> telemetry · <kbd>B</kbd> setup · <kbd>P</kbd> pause</p></div>
+          <p><kbd>↑</kbd>/<kbd>W</kbd> throttle · <kbd>↓</kbd>/<kbd>S</kbd> brake · <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> steer<br><kbd>E</kbd>/<kbd>Q</kbd> gear up / down · <kbd>M</kbd> sound · <kbd>L</kbd> export MoTeC<br><kbd>R</kbd> reset · <kbd>C</kbd> camera · <kbd>T</kbd> telemetry · <kbd>B</kbd> setup · <kbd>P</kbd> pause</p></div>
         <div><h3>Controller (Xbox, PlayStation…)</h3>
           <p>Left stick steer · <b>RT</b> throttle · <b>LT</b> brake · <b>RB</b>/<b>LB</b> gear up / down<br><b>A</b> reset · <b>Y</b> camera · <b>X</b> telemetry · <b>B</b> setup · <b>Menu</b> pause</p>
           <p id="padStatus" class="pad">No controller detected: plug it in and press a button.</p></div>
       </div>
       <p class="note"><b>Reverse</b>: once the car is stopped, release the brake and press it again. The brake then drives backwards and the throttle stops the car; press the throttle at a standstill to go back to first gear. The gearbox is automatic by default; shifting by hand switches it to manual.</p>
+      <p class="note"><b>MoTeC i2</b>: everything you drive is logged at 50 Hz (45 channels: speed, rpm, gear, pedals, steering, g-forces, yaw, roll, pitch, tyre loads, slip angles, camber, grip used, wheel travel, GPS track map…). <i>Export MoTeC</i> downloads a <code>.ld</code> log and its <code>.ldx</code> lap file: keep them in the same folder and open the <code>.ld</code> in i2 Pro.</p>
       <div class="watch"><h3>What to watch</h3>
         <p><b>Tyres</b>: bar = vertical load, colour = grip used (green → red at the limit), with live camber and slip angle. <b>Balance</b>: front vs rear slip angle, so you can see understeer or oversteer. <b>g-g diagram</b>: how much of the grip circle you use. <b>Lap trace</b>: compare your speed with your best lap.</p></div>
       <button id="btnStart" class="start">Start driving</button>

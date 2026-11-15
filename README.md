@@ -14,7 +14,7 @@ Interactive 3D **suspension lab** of a **1/4-scale single-seater (F2-style)**, b
 - **Move any pickup point** in 3D with a gizmo, or type its coordinates. The right side mirrors the left.
 - **Analyse** the geometry: roll centre heights, camber gain, bump steer, motion ratio, anti-dive / anti-squat, Ackermann, and live curves over wheel travel. The **Geometry** overlay draws the instant centres, roll centres, roll axis and steering axes in 3D.
 - **Share** a setup as a link, or export / import it as JSON.
-- **Drive it**: the *Track test* page puts the same setup on a test circuit (keyboard, game controller or touch). The car is simulated at full size, the suspension kinematics run live, and the telemetry shows tyre loads, grip used, camber, slip angles, balance (understeer / oversteer), a g-g diagram and lap traces. The car has a 6-speed gearbox (automatic or manual), a reverse gear, a synthesized engine sound that follows the revs and the throttle, and different grip on asphalt, kerbs and grass.
+- **Drive it**: the *Track test* page puts the same setup on a test circuit (keyboard, game controller or touch). The car is simulated at full size, the suspension kinematics run live, and the telemetry shows tyre loads, grip used, camber, slip angles, balance (understeer / oversteer), a g-g diagram and lap traces. The car has a 6-speed gearbox (automatic or manual), a reverse gear, an engine sound built from a physical model of the V6 and its exhaust, and different grip on asphalt, kerbs and grass. Every session is logged at 50 Hz and can be exported as a **MoTeC i2** log (`.ld` + `.ldx`, 45 channels with lap beacons and a GPS track map).
 
 ## Active and manual modes
 
@@ -48,7 +48,9 @@ body.js         Lofted F2-style bodywork
 drive.html      Track test page (drive.js, drive.css)
 dynamics.js     Full-size vehicle dynamics coupled to the suspension kinematics
 track.js        Test circuit geometry
-audio.js        Synthesized engine, tyre and track sounds (Web Audio API)
+audio.js        Engine, tyre and track sounds (Web Audio API)
+engine-worklet.js  Physical model of the V6 engine sound (AudioWorklet)
+motec.js        MoTeC i2 export (.ld log + .ldx lap beacons)
 v1/             First version (front axle demonstrator)
 ```
 
