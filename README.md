@@ -14,6 +14,7 @@ Interactive 3D **suspension lab** of a **1/4-scale single-seater (F2-style)**, b
 - **Move any pickup point** in 3D with a gizmo, or type its coordinates. The right side mirrors the left.
 - **Analyse** the geometry: roll centre heights, camber gain, bump steer, motion ratio, anti-dive / anti-squat, Ackermann, and live curves over wheel travel. The **Geometry** overlay draws the instant centres, roll centres, roll axis and steering axes in 3D.
 - **Share** a setup as a link, or export / import it as JSON.
+- **Drive it**: the *Track test* page puts the same setup on a test circuit (keyboard, game controller or touch). The car is simulated at full size, the suspension kinematics run live, and the telemetry shows tyre loads, grip used, camber, slip angles, balance (understeer / oversteer), a g-g diagram and lap traces.
 
 ## Active and manual modes
 
@@ -44,6 +45,9 @@ style.css       Styles (floating panel on desktop, bottom sheet on mobile)
 main.js         Three.js scene, UI, scenarios and the active/manual sequencer
 suspension.js   3D suspension kinematics and analysis (pure math, no Three.js)
 body.js         Lofted F2-style bodywork
+drive.html      Track test page (drive.js, drive.css)
+dynamics.js     Full-size vehicle dynamics coupled to the suspension kinematics
+track.js        Test circuit geometry
 v1/             First version (front axle demonstrator)
 ```
 

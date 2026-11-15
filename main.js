@@ -1132,6 +1132,11 @@ function drawCharts() {
 const BODY_MODES = ['ghost', 'solid', 'hidden'];
 $('btnBody').addEventListener('click', () => { bodyMode = BODY_MODES[(BODY_MODES.indexOf(bodyMode) + 1) % 3]; applyBodyMode(); requestRender(); });
 $('btnOverlay').addEventListener('click', (e) => { state.overlay = !state.overlay; overlay.visible = state.overlay; e.currentTarget.classList.toggle('on', state.overlay); labelsDirty = true; requestRender(); });
+$('btnTrack').addEventListener('click', () => {
+  // hand the current setup over to the track test page
+  try { localStorage.setItem('as3d-setup-v2', JSON.stringify(setup)); } catch (e) { /* ignore */ }
+  location.href = `drive.html#s=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(setup)))))}`;
+});
 $('btnLabels').addEventListener('click', (e) => { state.labels = !state.labels; e.currentTarget.classList.toggle('on', state.labels); requestRender(); });
 
 // Collapsible panel (bottom sheet on phones)

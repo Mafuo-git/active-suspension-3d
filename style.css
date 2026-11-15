@@ -51,6 +51,8 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 .viewbtns { display: flex; gap: 4px; flex-wrap: wrap; }
+.viewbtns button.track { background: #7f77dd; border-color: #7f77dd; color: #fff; font-weight: 600; }
+.viewbtns button.track:hover { background: #8f88e6; }
 .viewbtns button { padding: 6px 9px; font-size: 12.5px; background: var(--panel); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 
 /* 3D labels projected from scene anchors */

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Track test – Active Suspension 3D</title>
+  <meta name="description" content="Drive the F2-style car on a test circuit with the suspension setup from the lab, and read live telemetry: tyre loads, grip usage, camber, balance, g-g diagram and lap traces.">
+  <meta name="author" content="Matheo Merlin">
+  <meta name="theme-color" content="#16161a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%237f77dd'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23ef9f27'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="drive.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <!-- Vercel Web Analytics: visitors, page views, countries, referrers, devices (cookieless) -->
+  <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <div id="viewport" aria-label="3D view of the car on the test circuit"></div>
+
+  <header class="topbar">
+    <a class="back" href="index.html" id="backLink" title="Back to the suspension lab">← Suspension lab</a>
+    <div>
+      <h1>Track test</h1>
+      <span class="subtitle">Setup from the lab · full-size simulation<span class="credit"> · by Matheo Merlin</span></span>
+    </div>
+  </header>
+
+  <!-- Lap timing -->
+  <section class="laps card" aria-label="Lap times">
+    <div class="lap-now"><span id="lapTime">0:00.000</span><span id="lapFlag" class="flag"></span></div>
+    <div class="lap-grid">
+      <span>Last</span><b id="lapLast">–</b>
+      <span>Best</span><b id="lapBest">–</b>
+      <span>Delta</span><b id="lapDelta">–</b>
+    </div>
+    <div class="sectors" id="sectors"><i></i><i></i><i></i></div>
+  </section>
+
+  <!-- Toolbar -->
+  <nav class="toolbar" aria-label="Track test controls">
+    <button id="btnCam" title="Camera (C / Y)">Camera: chase</button>
+    <button id="btnTelemetry" class="on" title="Telemetry (T / X)">Telemetry</button>
+    <button id="btnSetup" title="Setup (B)">Setup</button>
+    <button id="btnReset" title="Back on track (R / A)">Reset car</button>
+    <button id="btnHelp" title="Help (H / View)">?</button>
+  </nav>
+
+  <!-- Telemetry -->
+  <aside id="telemetry" class="telemetry card" aria-label="Live telemetry">
+    <div class="tl-row">
+      <div class="tl-block">
+        <h2>Tyres <small>load · grip used · camber · slip</small></h2>
+        <canvas id="cvTyres" width="260" height="170"></canvas>
+      </div>
+      <div class="tl-block">
+        <h2>g-g diagram</h2>
+        <canvas id="cvGG" width="170" height="170"></canvas>
+      </div>
+    </div>
+    <h2>Balance <small id="balanceText">neutral</small></h2>
+    <div class="balance"><span>Oversteer</span><div class="bar"><i id="balanceDot"></i></div><span>Understeer</span></div>
+    <div class="stats" id="stats"></div>
+    <h2>Lap trace <small><span class="cur">current</span> vs <span class="best">best</span> lap: speed</small></h2>
+    <canvas id="cvTrace" width="440" height="110"></canvas>
+  </aside>
+
+  <!-- Speed and pedals -->
+  <section class="dash" aria-label="Speed and driver inputs">
+    <div class="speed"><b id="speed">0</b><span>km/h</span></div>
+    <div class="pedals">
+      <div class="pedal"><i id="brakeBar"></i><span>Brake</span></div>
+      <div class="pedal thr"><i id="throttleBar"></i><span>Throttle</span></div>
+    </div>
+    <div class="steer"><i id="steerBar"></i></div>
+    <div class="assist" id="assist"></div>
+  </section>
+
+  <!-- Setup drawer -->
+  <aside id="setupPanel" class="setup card" hidden aria-label="Car setup">
+    <div class="setup-head"><h2>Setup</h2><button id="btnSetupClose" aria-label="Close setup">✕</button></div>
+    <p class="hint">Changes apply instantly. Suspension geometry (camber, toe, caster, pickup points, push/pullrod…) comes from the lab.</p>
+    <div id="geoSummary" class="geo"></div>
+    <a id="editGeometry" class="link-btn" href="index.html">Edit geometry in the lab →</a>
+    <h3>Springs &amp; anti-roll bars</h3>
+    <div id="slSprings"></div>
+    <h3>Aero &amp; brakes</h3>
+    <div id="slAero"></div>
+    <h3>Mass &amp; tyres</h3>
+    <div id="slMass"></div>
+    <h3>Driver aids</h3>
+    <div class="grid2">
+      <button id="btnTC" class="on">Traction control</button>
+      <button id="btnABS" class="on">ABS</button>
+    </div>
+    <button id="btnDriveReset" class="wide">Reset these settings</button>
+    <h3>Try this</h3>
+    <ul class="tips">
+      <li>Stiffen the <b>rear anti-roll bar</b>: the balance moves to oversteer and the rear tyres turn red first.</li>
+      <li>Set the front <b>camber</b> to 0° in the lab: the loaded front tyre leans out and the car understeers.</li>
+      <li>Move the <b>aero balance</b> rearwards: stable in fast corners, lazy in slow ones.</li>
+      <li>Turn off <b>ABS</b> and brake hard while turning: locked fronts, no steering.</li>
+      <li>Raise the <b>front roll centre</b> (lab, Points tab): less body roll, more front load transfer.</li>
+    </ul>
+    <p id="explain" class="explain"></p>
+  </aside>
+
+  <!-- Touch controls (phones and tablets) -->
+  <div id="touch" class="touch" hidden>
+    <div id="touchSteer" class="touch-steer"><i></i><span>Steer</span></div>
+    <div class="touch-pedals">
+      <button id="touchBrake">Brake</button>
+      <button id="touchThrottle">Throttle</button>
+    </div>
+  </div>
+
+  <!-- Help / start -->
+  <div id="help" class="overlay">
+    <div class="help card">
+      <h2>Track test</h2>
+      <p>Drive the car with the setup from the suspension lab and watch how it behaves. The car is simulated at full size (lab model ×4). The suspension kinematics run live: body roll and pitch change each wheel's camber and steer angle, which changes its grip.</p>
+      <div class="controls">
+        <div><h3>Keyboard</h3>
+          <p><kbd>↑</kbd>/<kbd>W</kbd> throttle · <kbd>↓</kbd>/<kbd>S</kbd> brake · <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> steer<br><kbd>R</kbd> reset · <kbd>C</kbd> camera · <kbd>T</kbd> telemetry · <kbd>B</kbd> setup · <kbd>P</kbd> pause</p></div>
+        <div><h3>Controller (Xbox, PlayStation…)</h3>
+          <p>Left stick steer · <b>RT</b> throttle · <b>LT</b> brake<br><b>A</b> reset · <b>Y</b> camera · <b>X</b> telemetry · <b>B</b> setup · <b>Menu</b> pause</p>
+          <p id="padStatus" class="pad">No controller detected: plug it in and press a button.</p></div>
+      </div>
+      <div class="watch"><h3>What to watch</h3>
+        <p><b>Tyres</b>: bar = vertical load, colour = grip used (green → red at the limit), with live camber and slip angle. <b>Balance</b>: front vs rear slip angle, so you can see understeer or oversteer. <b>g-g diagram</b>: how much of the grip circle you use. <b>Lap trace</b>: compare your speed with your best lap.</p></div>
+      <button id="btnStart" class="start">Start driving</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="drive.js"></script>
+</body>
+</html>
