@@ -1,6 +1,6 @@
 # Active Suspension 3D
 
-A project by **Matheo Merlin**.
+A project by the **Active Suspension 3D project team** · © 2026 · [CC BY-NC 4.0](LICENSE): free for personal use with credit, **no commercial use**.
 
 Interactive 3D **suspension lab** of a **1/4-scale single-seater (F2-style)**, built to teach vehicle dynamics. Everything runs in the browser, on desktop, tablet and phone.
 
@@ -87,3 +87,14 @@ Static folder: on [Vercel](https://vercel.com), import the repository with the *
 ## Disclaimer
 
 Concept model for education. The geometry is representative of an F2-style car, not a reproduction of a specific car.
+
+## Licence and credit
+
+© 2026 Active Suspension 3D project team. This project (code, website, models, figures, texts and user guide) is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License](https://creativecommons.org/licenses/by-nc/4.0/) (CC BY-NC 4.0). See [LICENSE](LICENSE).
+
+- **Personal, educational and research use**: welcome. You may use, share and modify it.
+- **Credit is required** whenever you share or publish the project or any work based on it:
+  > Based on *Active Suspension 3D* by the Active Suspension 3D project team (https://github.com/Mafuo-git/active-suspension-3d), licensed under CC BY-NC 4.0.
+- **No commercial use** of the project or of any work based on it without prior written permission. For a commercial licence, contact the team through this repository.
+
+Versions published before 16 November 2026 were under the MIT License; every version from that date is under CC BY-NC 4.0 only. three.js keeps its own MIT License. "Formula 2", "F2", "MoTeC" and "i2" are trademarks of their owners; this project is not affiliated with them.

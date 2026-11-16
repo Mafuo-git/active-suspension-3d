@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 Active Suspension 3D project team. Licensed under CC BY-NC 4.0 (no commercial use).
+   SPDX-License-Identifier: CC-BY-NC-4.0 · See LICENSE */
 /* Track test page */
 
 :root {
@@ -170,3 +172,4 @@ kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--border); borde
   .gearbox b { font-size: 22px; }
   .gearbox span { font-size: 11px; }
 }
+.note.legal { font-size: 11.5px; } .note.legal a { color: #a9a3f0; }

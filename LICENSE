@@ -1,21 +1,68 @@
-MIT License
+Active Suspension 3D
+Copyright (c) 2026 Active Suspension 3D project team. Some rights reserved.
 
-Copyright (c) 2026 Matheo Merlin
+This work - the source code, the website, its 3D models, figures, texts and
+documentation, including the user guide - is licensed under the
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+    Creative Commons Attribution-NonCommercial 4.0 International License
+    (CC BY-NC 4.0)
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Human-readable summary: https://creativecommons.org/licenses/by-nc/4.0/
+Full legal code (the binding text):
+    https://creativecommons.org/licenses/by-nc/4.0/legalcode
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+-------------------------------------------------------------------------------
+IN SHORT (this summary does not replace the legal code)
+-------------------------------------------------------------------------------
+
+You MAY, for non-commercial purposes only:
+  * use, run and study the project for personal, educational or research use;
+  * copy and share it;
+  * modify it and build your own work on it.
+
+You MUST:
+  * give appropriate credit whenever you share, publish or present the project
+    or any work based on it (article, video, post, report, repository, website,
+    talk...). Use this attribution:
+
+        "Based on Active Suspension 3D by the Active Suspension 3D project team
+         (https://github.com/Mafuo-git/active-suspension-3d),
+         licensed under CC BY-NC 4.0."
+
+  * link to the licence and say whether you made changes;
+  * not suggest that the Active Suspension 3D project team endorses you or your use.
+
+You MAY NOT:
+  * use the project, or any part or adaptation of it, for commercial purposes:
+    no sale, no paid product or service, no integration in a commercial
+    product, no use by or for a company to earn money or gain a commercial
+    advantage, no paid training or consulting based on it, without prior
+    written permission from the Active Suspension 3D project team;
+  * remove or alter this copyright notice, the licence notice or the credits.
+
+Commercial licensing: any commercial use requires a separate written agreement.
+Contact the Active Suspension 3D project team through the GitHub repository
+(https://github.com/Mafuo-git/active-suspension-3d) to ask for permission.
+
+-------------------------------------------------------------------------------
+Previous versions
+-------------------------------------------------------------------------------
+Versions of this repository published before 16 November 2026 were released
+under the MIT License. From that date, every version is released under
+CC BY-NC 4.0 only.
+
+-------------------------------------------------------------------------------
+Third-party components and trademarks
+-------------------------------------------------------------------------------
+* three.js (https://threejs.org) is loaded from a CDN and remains under its own
+  MIT License, (c) three.js authors. It is not covered by this licence.
+* "Formula 2", "F2", "MoTeC" and "i2" are trademarks of their respective owners.
+  They are used only to describe the style of car and the file format. This
+  project is not affiliated with, endorsed or sponsored by them.
+
+-------------------------------------------------------------------------------
+No warranty
+-------------------------------------------------------------------------------
+The work is provided "as is", without warranty of any kind. It is a concept
+model for education, not an engineering tool: do not use it to design or
+validate a real vehicle without independent verification.
